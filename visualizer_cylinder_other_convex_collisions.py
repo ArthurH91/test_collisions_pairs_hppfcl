@@ -28,7 +28,8 @@ rmodel = pin.Model()
 cmodel = pin.GeometryModel()
 
 
-r_sphere = 1.5
+r_cyl = 1.5
+halfLength_cyl = 5
 r1 = 0.5
 halfLength = 0.5
 x, y, z = 0.5, 0.2, 0.6
@@ -37,46 +38,57 @@ x, y, z = 0.5, 0.2, 0.6
 rmodel = pin.Model()
 cmodel = pin.GeometryModel()
 geometries = [
-    hppfcl.Sphere(r_sphere),
+    hppfcl.Cylinder(r_cyl, halfLength_cyl),
     hppfcl.Sphere(r1),
     hppfcl.Capsule(r1, halfLength),
     hppfcl.Cylinder(r1, halfLength),
     hppfcl.Ellipsoid(x,y,z),
-    hppfcl.Box(x,y,z)
+    hppfcl.Box(x,y,z),
+    hppfcl.Sphere(r1),
+    hppfcl.Capsule(r1, halfLength),
+    hppfcl.Cylinder(r1, halfLength),
+    hppfcl.Ellipsoid(x,y,z),
+    hppfcl.Box(x,y,z),
 ]
 
 placements = [
     pin.SE3(np.eye(3), np.array([0, 0, 0])),
     pin.SE3(pin.SE3.Random().rotation, np.array([-0.2, -1.5, -0.0])),
-    pin.SE3(pin.SE3.Random().rotation, np.array([0.3, 1.5, 0])),
-    pin.SE3(pin.SE3.Random().rotation, np.array([-1.3, 0.3, 0])),
-    pin.SE3(pin.SE3.Random().rotation, np.array([1.5, 0.3, 0.3])),
+    pin.SE3(pin.SE3.Random().rotation, np.array([0.5, 1.5, 0])),
+    pin.SE3(pin.SE3.Random().rotation, np.array([-1.3, 0.1, 0])),
+    pin.SE3(pin.SE3.Random().rotation, np.array([1.5, 0.9, 0.3])),
     pin.SE3(pin.SE3.Random().rotation, np.array([1.0, -1.2, 0.3])),
+    pin.SE3(pin.SE3.Random().rotation, np.array([-0.2, -1.5, 2.2])),
+    pin.SE3(pin.SE3.Random().rotation, np.array([0.8, -1.5, 2.0])),
+    pin.SE3(pin.SE3.Random().rotation, np.array([0.5, 1.5, 2.0])),
+    pin.SE3(pin.SE3.Random().rotation, np.array([-1.3, 0.1, 2.0])),
+    pin.SE3(pin.SE3.Random().rotation, np.array([1.5, 0.9, 2.3])),
+    pin.SE3(pin.SE3.Random().rotation, np.array([.5, -1.5, 2.3])),
 ]
 
 colors = [RED, BLUE, GREEN, YELLOW, GREY, BLACK]
 
-req = hppfcl.DistanceRequest()
-res = hppfcl.DistanceResult()
+
 
 for i, geom in enumerate(geometries):
     placement = placements[i]
     geom_obj = pin.GeometryObject("obj" + str(i), 0, 0, placement, geom)
-    geom_obj.meshColor = colors[i]
+    geom_obj.meshColor = colors[i%6]
     cmodel.addGeometryObject(geom_obj)
-    
-    
-for geom_obj in cmodel.geometryObjects:
-    pos_sphere = cmodel.geometryObjects[cmodel.getGeometryId("obj0")].placement
-    geom_sphere = cmodel.geometryObjects[cmodel.getGeometryId("obj0")].geometry
+
+cmodel_cp = cmodel.copy()
+
+for geom_obj in cmodel_cp.geometryObjects:    
+    pos_ref = cmodel.geometryObjects[cmodel.getGeometryId("obj0")].placement
+    geom_ref = cmodel.geometryObjects[cmodel.getGeometryId("obj0")].geometry
     if not "obj0" in geom_obj.name:
         print(geom_obj.name)
+        
         req = hppfcl.DistanceRequest()
         res = hppfcl.DistanceResult()
-
         dist = hppfcl.distance(
-            geom_sphere, 
-            pos_sphere,
+            geom_ref, 
+            pos_ref,
             geom_obj.geometry,
             geom_obj.placement,
             req,
@@ -99,6 +111,8 @@ for geom_obj in cmodel.geometryObjects:
         cp2_geom.meshColor = BLACK_FULL
         cmodel.addGeometryObject(cp1_geom)
         cmodel.addGeometryObject(cp2_geom)
+    else:
+        pass
 
         
 rdata = rmodel.createData()
@@ -107,7 +121,7 @@ cdata = cmodel.createData()
 pin.updateGeometryPlacements(rmodel, rdata, cmodel, cdata)
 
 viz = MeshcatVisualizer(rmodel, cmodel,cmodel)
-viz.initViewer(open=False)
+viz.initViewer(open=True)
 viz.loadViewerModel()
 q0 = pin.neutral(rmodel)
 viz.display(q0)
